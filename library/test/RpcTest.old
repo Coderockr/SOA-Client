@@ -1,0 +1,356 @@
+<?php
+namespace test;
+
+use model;
+
+class SpotStatusTest extends ApiTest
+{
+
+    public function __construct() 
+    {
+        parent::__construct();
+        $this->curl_url = $this->url . '/rpc/spotStatus';
+    }
+
+    public function tearDown(){
+        $query = $this->em->createQuery('delete from model\Purchase');
+        $query->execute();
+        $query = $this->em->createQuery('delete from model\Checkin');
+        $query->execute();
+        $query = $this->em->createQuery('delete from model\Spot');
+        $query->execute();
+        $query = $this->em->createQuery('delete from model\Waiter');
+        $query->execute();
+        $query = $this->em->createQuery('delete from model\Client');
+        $query->execute();
+        $query = $this->em->createQuery('delete from model\Product');
+        $query->execute();
+        $query = $this->em->createQuery('delete from model\Category');
+        $query->execute();
+        $query = $this->em->createQuery('delete from model\Menu');
+        $query->execute();
+        $query = $this->em->createQuery('delete from model\User');
+        $query->execute();
+        parent::tearDown();
+    }
+
+    public function testExecute()
+    {
+
+        $products = $this->buildProducts();
+
+        $spot   = $this->buildSpot();
+
+        $waiter = $this->buildWaiter();
+
+        $clientA = $this->buildClient();
+        $clientB = $this->buildClient();
+        $clientC = $this->buildClient();
+
+        $this->buildCheckin($spot, $waiter, $clientA); 
+        $this->buildCheckin($spot, $waiter, $clientB); 
+        $this->buildCheckin($spot, $waiter, $clientC); 
+
+        $this->buildPurchase($spot, $waiter, $clientA, $products);
+        $this->buildPurchase($spot, $waiter, $clientB, $products);
+        $this->buildPurchase($spot, $waiter, $clientC, $products);
+
+        $params = array(
+            'parameters[spot_id]'   => $spot->id,
+        );
+        
+        $result = $this->post($this->curl_url, $params);
+
+        $this->assertEquals($result['code'], 200);
+        $this->assertEquals($result['type'], "text/json; charset=UTF-8");
+        $this->assertEquals(count($result['response']), 3);
+
+        $client = $result['response'][0]->client;
+        $products = $result['response'][0]->products;
+        $this->assertEquals($client->name, $clientA->name);
+        $this->assertEquals(count($products), 5);
+
+        //pay bill
+        $params = array(
+            'parameters[spot_id]'   => $spot->id,
+            'parameters[client_id]' => $clientA->id,
+            'parameters[paymentType]'  => model\PaymentType::DEBITO_REDECARD,
+            'parameters[user_id]'  => $this->buildUser()
+        );
+        $result = $this->post($this->url . '/rpc/payBill', $params);
+
+        $params = array(
+            'parameters[spot_id]'   => $spot->id,
+        );
+        
+        $result = $this->post($this->curl_url, $params);
+        
+        $this->assertEquals($result['code'], 200);
+        $this->assertEquals($result['type'], "text/json; charset=UTF-8");
+        $this->assertEquals(count($result['response']), 2);
+
+        $client = $result['response'][0]->client;
+        $products = $result['response'][0]->products;
+        $this->assertEquals($client->name, $clientB->name);
+        $this->assertEquals(count($products), 5);
+
+    }
+
+    public function testExecuteWithoutPurchase()
+    {
+        $products = $this->buildProducts();
+
+        $spot   = $this->buildSpot();
+
+        $waiter = $this->buildWaiter();
+
+        $clientA = $this->buildClient();
+        $clientB = $this->buildClient();
+        $clientC = $this->buildClient();
+
+        $this->buildCheckin($spot, $waiter, $clientA); 
+        $this->buildCheckin($spot, $waiter, $clientB); 
+        $this->buildCheckin($spot, $waiter, $clientC); 
+
+        $params = array(
+            'parameters[spot_id]'   => $spot->id,
+        );
+        
+        $result = $this->post($this->curl_url, $params);
+
+        $this->assertEquals($result['code'], 200);
+        $this->assertEquals($result['type'], "text/json; charset=UTF-8");
+        $this->assertEquals(count($result['response']), 3);
+
+        $client = $result['response'][0]->client;
+        $products = $result['response'][0]->products;
+        $this->assertEquals($client->name, $clientA->name);
+        $this->assertEquals(count($products), 0);
+
+        //pay bill
+        $params = array(
+            'parameters[spot_id]'   => $spot->id,
+            'parameters[client_id]' => $clientA->id,
+            'parameters[paymentType]'  => model\PaymentType::DEBITO_REDECARD,
+            'parameters[user_id]'  => $this->buildUser()
+        );
+        $result = $this->post($this->url . '/rpc/payBill', $params);
+
+        $params = array(
+            'parameters[spot_id]'   => $spot->id,
+        );
+        
+        $result = $this->post($this->curl_url, $params);
+        
+        $this->assertEquals($result['code'], 200);
+        $this->assertEquals($result['type'], "text/json; charset=UTF-8");
+        $this->assertEquals(count($result['response']), 2);
+
+        $client = $result['response'][0]->client;
+        $products = $result['response'][0]->products;
+        $this->assertEquals($client->name, $clientB->name);
+        $this->assertEquals(count($products), 0);
+    }
+
+    public function testExecuteOneClientWithoutPurchases()
+    {
+        $products = $this->buildProducts();
+
+        $spot   = $this->buildSpot();
+
+        $waiter = $this->buildWaiter();
+
+        $clientA = $this->buildClient();
+        $clientB = $this->buildClient();
+        $clientWithoutPurchases = $this->buildClient();
+
+        $this->buildCheckin($spot, $waiter, $clientA); 
+        $this->buildCheckin($spot, $waiter, $clientB); 
+        $this->buildCheckin($spot, $waiter, $clientWithoutPurchases); 
+
+        $this->buildPurchase($spot, $waiter, $clientA, $products);
+        $this->buildPurchase($spot, $waiter, $clientB, $products);
+
+        $params = array(
+            'parameters[spot_id]'   => $spot->id,
+        );
+        
+        $result = $this->post($this->curl_url, $params);
+        
+        $this->assertEquals($result['code'], 200);
+        $this->assertEquals($result['type'], "text/json; charset=UTF-8");
+        $this->assertEquals(count($result['response']), 3);
+
+        foreach ($result['response'] as $clientData) {
+            if ($clientData->client->id == $clientWithoutPurchases->id) {
+                $products = $clientData->products;
+                $this->assertEquals(count($products), 0);
+            } else {
+                $products = $clientData->products;
+                $this->assertEquals(count($products), 5);
+            }
+        }
+    }
+
+    private function buildProducts()
+    {
+        //menu
+        $menu = $this->buildMenu();
+
+        $peixes = $this->buildCategory($menu,'Peixes');
+        $carnes = $this->buildCategory($menu,'Carnes');
+
+        $products = array();
+        $products[] = $this->buildProduct($peixes, 'Truta');
+        $products[] = $this->buildProduct($peixes, 'Linguado');
+        $products[] = $this->buildProduct($peixes, 'Merluza');
+        
+        $products[] = $this->buildProduct($carnes, 'Picanha');
+        $products[] = $this->buildProduct($carnes, 'Costela');
+
+        return $products;
+
+    }
+
+    private function buildCheckin($spot, $waiter, $client)
+    {
+        //build checkins
+        $params = array(
+            'parameters[spot_number]' => $spot->number,
+            'parameters[waiter_id]'    => $waiter->id,
+            'parameters[client_id]'    => $client->id
+        );
+        
+        $result = $this->post($this->url . '/rpc/openSpot', $params);
+    }
+
+    private function buildPurchase($spot, $waiter, $client, $products)
+    {
+        
+        //purchases
+        $paramProducts = array();
+        foreach ($products as $p) {
+            $paramProducts[] = array(
+                'id'     => $p->id,
+                'price'  => $p->price,
+                'discount' => 0,
+                'amount' => 1,
+                'observation' => 'Observação'  
+            );
+        }
+        $params = array(
+            'parameters[spot_number]' => $spot->number,
+            'parameters[waiter_id]'   => $waiter->id,
+            'parameters[client_id]'   => $client->id,
+            'parameters[products]'    => $paramProducts,
+        );
+        $result = $this->post($this->url . '/rpc/processPurchase', $params);
+    }
+
+    private function buildSpot()
+    {
+        $fields = array(
+            'spot[number]'=> '16',
+            'spot[place]' => 'Interno',
+        );
+        $result = $this->post($this->url . '/spot', $fields);
+
+        return $result['response'];
+
+    }     
+
+    private function buildWaiter()
+    {
+        $fields = array(
+            'waiter[name]'=> 'Bruce Wayne',
+            'waiter[password]' => '1sdfdsf',
+        );
+        $result = $this->post($this->url . '/waiter', $fields);
+
+        return $result['response'];
+
+    }  
+
+    private function buildClient()
+    {
+        sleep(1);
+        $fields = array(
+            'client[name]'  => 'Bruce Banner',
+            'client[phone]' => date('mdsissis'),
+            'client[city]'  => 'GothamCity',
+            'client[state]' => 'NY',
+            'client[email]' => 'bruce@batcave.com',
+        );
+        $result = $this->post($this->url . '/client', $fields);
+        return $result['response'];
+
+    }    
+
+    private function buildProduct($category, $name)
+    {
+        $fields = array(
+            'product[name]' => $name,
+            'product[description]' => 'Descrição do produto ' . $name,
+            'product[price]' => 49.99,
+            'product[status]' => model\ProductStatus::AVAILABLE,
+            'product[processedBy]' => model\ProcessedBy::KITCHEN,
+            'product[tags]' => 'light, especial',
+            'product[evaluable]' => 1,
+            'product[snapshot]' => $name . '.png',
+            'product[category]' => array (
+                'id'  => $category
+            )
+        );
+    
+        $result = $this->post($this->url . '/product', $fields);
+
+        return $result['response'];
+
+    }
+
+    private function buildMenu()
+    {
+        
+        $fields = array(
+            'menu[name]'        =>'Cardápio',
+            'menu[description]' =>'Cardápio do restaurante',
+            'menu[date_start]'   => date('Y-m-d', mktime (0, 0, 0, date("m"),  date("d"),  date("Y")-1)),
+            'menu[date_end]'     => date('Y-m-d', mktime (0, 0, 0, date("m"),  date("d"),  date("Y")+1)),
+            'menu[active]'      => 1,
+        );
+        $result = $this->post($this->url . '/menu', $fields);
+
+        return $result['response']->id;
+
+    }
+
+    private function buildCategory($menu, $name)
+    {
+        $fields = array(
+            'category[name]'        => $name,
+            'category[image]'       => $name . '.png',
+            'category[suggestion]'  => 'Truta',
+            'category[menu]'        => array('id' => $menu),
+            
+        );
+        $result = $this->post($this->url . '/category', $fields);
+
+        return $result['response']->id;
+
+    }
+
+    private function buildUser()
+    {
+
+        $fields = array(
+            'user[name]' =>'Jack Daniels',
+            'user[login]' =>'jack',
+            'user[password]' => md5('pass'),
+            'user[email]' =>'jack@daniels.com',
+            'user[type]' => model\UserType::CASHIER,
+        );
+    
+        $result = $this->post($this->url . '/user', $fields);
+        return $result['response']->id;
+    }
+}
