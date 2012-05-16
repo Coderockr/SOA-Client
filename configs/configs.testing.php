@@ -8,4 +8,4 @@ $dbOptions = array(
     'dbname'  => 'sample_test',
 );
 
-$soaUrl = 'http://soasample.dev:8080';
+$soaUrl = 'http://soasampletest.dev:8080';
