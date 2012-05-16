@@ -1,11 +1,11 @@
-Introdução
-===========
+#Introdução
+
 
 Essa é uma aplicação de modelo a ser usada como base para a criação de aplicativos baseados no [Coderockr SOA-Server](http://github.com/Coderockr/SOA-Server)
 
 
-Estrutura dos diretórios
-------------------------
+##Estrutura dos diretórios
+
 
 - bin: diretório de executáveis do projeto, como o doctrine
 - configs
@@ -21,14 +21,18 @@ Estrutura dos diretórios
 - bootstrap.php: configurações necessárias para a aplicação, como inicialização do Doctrine
 - phpunit.xml: arquivo usado pelo PHPUnit
 
-Instalação
-----------
+#Instalação
+
 
 - Clonar o projeto
 - Executar o vendors.sh
 - Duplicar o arquivo configs/configs.php para configs/configs.development.php e fazer as alterações necessárias
 - Duplicar o arquivo configs/configs.php para configs/configs.testing.php e fazer as alterações necessárias
-- Criar o domínio virtual do Apache para usar o SOA-Server, conforme o exemplo (alterando o ServerName, DocumentRoot e APPLICATION_PATH ):
+- Dar permissão de escrita no diretório de logs, como o exemplo (assumindo que o usuário do Apache seja o www-data):
+```    
+    chown -R www-data:www-data /vagrant/SOA-Client/logs
+```
+- Criar os domínio virtuais do Apache para usar o SOA-Server, conforme o exemplo (alterando o ServerName, DocumentRoot e APPLICATION_PATH ):
 
 ```
 <VirtualHost *:80>
@@ -55,10 +59,38 @@ Instalação
                 RewriteRule .? - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
         </Directory>
 </VirtualHost>
+
+<VirtualHost *:80>
+        DocumentRoot "/vagrant/SOA-Server"
+        ServerName soasampletest.dev
+        SetEnv APPLICATION_ENV testing
+        SetEnv APPLICATION_PATH /vagrant/SOA-Client
+        Header set Access-Control-Allow-Origin *
+
+        <Directory "/vagrant/SOA-Server">
+                Options Indexes Multiviews FollowSymLinks
+                AllowOverride All
+                Order allow,deny
+                Allow from all
+
+                <Limit GET HEAD POST PUT DELETE OPTIONS>
+                        Order Allow,Deny
+                        Allow from all
+                </Limit>
+
+                RewriteEngine On
+                RewriteCond %{REQUEST_FILENAME} !-f
+                RewriteRule !\.(js|ico|gif|jpg|png|css|htm|html|txt|mp3)$ index.php
+                RewriteRule .? - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+        </Directory>
+</VirtualHost>
 ```
-- Configurar /etc/hosts:
-    
-    127.0.0.1   soasample.dev
+- Configurar o /etc/hosts
+
+	127.0.0.1       soasample.dev  
+	127.0.0.1       soasampletest.dev  
+
+
 
 Geração das tabelas
 -------------------
