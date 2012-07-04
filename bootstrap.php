@@ -6,7 +6,7 @@ use Doctrine\ORM\Tools\Setup,
     Doctrine\Common\EventManager as EventManager,
     Doctrine\ORM\Events,
     Doctrine\ORM\Configuration,
-    Doctrine\Common\Cache\ArrayCache as Cache,
+    Doctrine\Common\Cache\ApcCache as Cache,
     Doctrine\Common\Annotations\AnnotationRegistry, 
     Doctrine\Common\Annotations\AnnotationReader,
     DMS\Filter\Mapping,
@@ -50,6 +50,10 @@ $classLoaderTest->register();
 
 $classLoaderCoderockr = new \Doctrine\Common\ClassLoader('Coderockr', __DIR__.'/vendor' );
 $classLoaderCoderockr->register();
+
+$classLoaderMonolog = new \Doctrine\Common\ClassLoader('Metadata', __DIR__.'/vendor/monolog/src' );
+$classLoaderMonolog->register(); 
+
 
 if(!getenv('APPLICATION_ENV')) 
     $env = 'testing';
