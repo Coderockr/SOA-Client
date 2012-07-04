@@ -20,6 +20,7 @@ abstract class Entity
     /**
      * @ORM\Column(type="datetime")
      * @JMS\Groups({"entity"})
+     * @JMS\Accessor("getCreated")
      * @var datetime
      */
     protected $created;
@@ -46,7 +47,7 @@ abstract class Entity
 
     public function getCreated()
     {
-        return $this->created;
+        return $this->created->format('Y-m-d H:i:s');
     }
     
     public function setCreated($created)
