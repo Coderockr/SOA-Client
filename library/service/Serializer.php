@@ -70,7 +70,7 @@ class Serializer
 
         $handlers = array(
             new ObjectBasedCustomHandler($objectConstructor, $factory),
-            new DateTimeHandler(),
+            new DateTimeHandler('Y-m-d H:i:s'),
             new ConstraintViolationHandler(),
             new DoctrineProxyHandler(),
         );
@@ -85,7 +85,7 @@ class Serializer
 
         $handlers = array(
             new ObjectBasedCustomHandler($objectConstructor, $factory),
-            new DateTimeHandler(),
+            new DateTimeHandler('Y-m-d H:i:s'),
             new ArrayCollectionHandler(),
         );
 
