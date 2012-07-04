@@ -49,4 +49,13 @@ abstract class Service
         }
         return true;
     }
+
+    protected function debug($message)
+    {
+        $result = array(
+            'status' => 'error', 
+            'data' => $message
+        );
+        return $result;
+    }
 }
