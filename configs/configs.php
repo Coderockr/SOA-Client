@@ -8,3 +8,4 @@ $dbOptions = array(
 );
 
 $soaUrl = 'http://soasample:8080.dev';
+$useCache = 1;
