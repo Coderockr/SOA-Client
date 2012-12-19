@@ -1,5 +1,8 @@
 <?php
-use Symfony\Component\ClassLoader\UniversalClassLoader;
+$loader = require_once __DIR__.'/vendor/autoload.php';
+$loader->add('model', __DIR__ . '/library');
+$loader->add('service', __DIR__ . '/library');
+$loader->add('test', __DIR__ . '/library');
 
 use Doctrine\ORM\Tools\Setup,
     Doctrine\ORM\EntityManager,
@@ -13,48 +16,6 @@ use Doctrine\ORM\Tools\Setup,
     DMS\Filter\Filter,
     Doctrine\Common\ClassLoader;
 
-require_once __DIR__.'/vendor/doctrine/common/lib/Doctrine/Common/ClassLoader.php';
-
-$classLoaderSymfony = new \Doctrine\Common\ClassLoader('Symfony', __DIR__.'/vendor' );
-$classLoaderSymfony->register(); 
-
-$classLoaderDoctrineCommon = new \Doctrine\Common\ClassLoader('Doctrine\\Common', __DIR__.'/vendor/doctrine/common/lib' );
-$classLoaderDoctrineCommon->register(); 
-
-$classLoaderDoctrineMigrations = new \Doctrine\Common\ClassLoader('Doctrine\\DBAL\\Migrations', __DIR__.'/vendor/doctrine/dbal/lib' );
-$classLoaderDoctrineMigrations->register(); 
-
-$classLoaderDoctrineDbal = new \Doctrine\Common\ClassLoader('Doctrine\\DBAL', __DIR__.'/vendor/doctrine/dbal/lib' );
-$classLoaderDoctrineDbal->register(); 
-
-$classLoaderDoctrine = new \Doctrine\Common\ClassLoader('Doctrine', __DIR__.'/vendor/doctrine/orm/lib' );
-$classLoaderDoctrine->register(); 
-
-$classLoaderJMS = new \Doctrine\Common\ClassLoader('JMS', __DIR__.'/vendor' );
-$classLoaderJMS->register(); 
-
-$classLoaderDMS = new \Doctrine\Common\ClassLoader('DMS', __DIR__.'/vendor' );
-$classLoaderDMS->register(); 
-
-$classLoaderMetadata = new \Doctrine\Common\ClassLoader('Metadata', __DIR__.'/vendor/Metadata/src' );
-$classLoaderMetadata->register(); 
-
-$classLoaderModel = new \Doctrine\Common\ClassLoader('model', __DIR__ . '/library' );
-$classLoaderModel->register(); 
-
-$classLoaderService = new \Doctrine\Common\ClassLoader('service', __DIR__ . '/library');
-$classLoaderService->register(); 
-
-$classLoaderTest = new \Doctrine\Common\ClassLoader('test', __DIR__ . '/library');
-$classLoaderTest->register(); 
-
-$classLoaderCoderockr = new \Doctrine\Common\ClassLoader('Coderockr', __DIR__.'/vendor' );
-$classLoaderCoderockr->register();
-
-$classLoaderMonolog = new \Doctrine\Common\ClassLoader('Metadata', __DIR__.'/vendor/monolog/src' );
-$classLoaderMonolog->register(); 
-
-
 if(!getenv('APPLICATION_ENV')) 
     $env = 'testing';
 else
@@ -67,6 +28,20 @@ elseif ($env == 'development')
 else
     include __DIR__.'/configs/configs.php';
 
+//filter
+//Get Doctrine Reader
+$reader = new AnnotationReader();
+//$reader->setEnableParsePhpImports(true);
+
+//Load AnnotationLoader
+$loader = new Mapping\Loader\AnnotationLoader($reader);
+
+//Get a MetadataFactory
+$metadataFactory = new Mapping\ClassMetadataFactory($loader);
+
+//Get a Filter
+$filter = new Filter($metadataFactory);
+
 //doctrine
 $config = new Configuration();
 $cache = new Cache();
@@ -76,9 +51,9 @@ $config->setProxyNamespace('EntityProxy');
 $config->setAutoGenerateProxyClasses(true);
  
 //mapping (example uses annotations, could be any of XML/YAML or plain PHP)
-AnnotationRegistry::registerFile(__DIR__.'/vendor/doctrine/orm/lib/Doctrine/ORM/Mapping/Driver/DoctrineAnnotations.php');
-AnnotationRegistry::registerAutoloadNamespace('JMS', __DIR__.'/vendor');
-AnnotationRegistry::registerAutoloadNamespace('DMS', __DIR__.'/vendor');
+AnnotationRegistry::registerFile(__DIR__. DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'doctrine' . DIRECTORY_SEPARATOR . 'orm' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'Doctrine' . DIRECTORY_SEPARATOR . 'ORM' . DIRECTORY_SEPARATOR . 'Mapping' . DIRECTORY_SEPARATOR . 'Driver' . DIRECTORY_SEPARATOR . 'DoctrineAnnotations.php');
+AnnotationRegistry::registerAutoloadNamespace('JMS', __DIR__. DIRECTORY_SEPARATOR . 'vendor/jms/serializer-bundle/');
+AnnotationRegistry::registerAutoloadNamespace('DMS', __DIR__. DIRECTORY_SEPARATOR . 'vendor');
 
 $driver = new Doctrine\ORM\Mapping\Driver\AnnotationDriver(
     new Doctrine\Common\Annotations\AnnotationReader(),
